@@ -7,8 +7,9 @@
 
 #include <stdio.h>
 
+extern int ch2_main(void);
+
 int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
+    ch2_main();
     return 0;
 }
