@@ -203,7 +203,24 @@ void test_even_ones(void) {
     printf("All test cases passed\n");
 }
 
+// 2.70
+int fits_bits(int x, int n) {
+    return !((-1 << n) & x);
+}
+
+void test_fits_bits(void) {
+    int x = 0x23456;
+    assert(fits_bits(x, 3) == 0);
+    assert(fits_bits(x, 4) == 0);
+    assert(fits_bits(x, 5) == 0);
+    assert(fits_bits(x, 17) == 0);
+    assert(fits_bits(x, 18) == 1);
+    assert(fits_bits(x, 19) == 1);
+    assert(fits_bits(x, 20) == 1);
+    printf("All test passed\n");
+}
+
 int ch2_main(void) {
-    test_even_ones();
+    test_fits_bits();
     return 0;
 }
