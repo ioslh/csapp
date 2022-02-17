@@ -203,6 +203,25 @@ void test_even_ones(void) {
     printf("All test cases passed\n");
 }
 
+// 2.66
+int leftmost_one(unsigned x) {
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return (int)(x ^ (x >> 1));
+}
+
+void test_leftmost_one(void) {
+    assert(leftmost_one(0U) == 0);
+    assert(leftmost_one(1U) == 1);
+    assert(leftmost_one(3U) == 2);
+    assert(leftmost_one(0x7bcd) == 0x4000);
+    assert(leftmost_one((unsigned)-1) == 0x80000000);
+    printf("leftmost_one: all test cases passed\n");
+}
+
 // 2.70
 int fits_bits(int x, int n) {
     return !((-1 << n) & x);
@@ -221,6 +240,6 @@ void test_fits_bits(void) {
 }
 
 int ch2_main(void) {
-    test_fits_bits();
+    test_leftmost_one();
     return 0;
 }
