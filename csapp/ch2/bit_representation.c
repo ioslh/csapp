@@ -222,6 +222,34 @@ void test_leftmost_one(void) {
     printf("leftmost_one: all test cases passed\n");
 }
 
+// 2.68
+// TODO: incorrect when n is 32
+int lower_bits(int x, int n) {
+    return ~(-1 << n) | x;
+}
+
+void test_lower_bits(void) {
+    int x = 0x6789abcd;
+    for(int i = 0; i < 32; i++) {
+        printf("%d -> %#.8x\n", i, lower_bits(x, i));
+    }
+}
+
+// 2.69
+unsigned rotate_right(unsigned x, int n) {
+    int w = sizeof(x) * CHAR_BIT;
+    unsigned tail = ~(-1 << n) & x;
+    unsigned head = x >> n;
+    return (tail << (w - n)) | head;
+}
+
+void test_rotate_right(void) {
+    int x = 0x12345678;
+    assert(rotate_right(x, 4) == 0x81234567);
+    assert(rotate_right(x, 20) == 0x45678123);
+    printf("rotate_right: all test cases passed\n");
+}
+
 // 2.70
 int fits_bits(int x, int n) {
     return !((-1 << n) & x);
@@ -240,6 +268,6 @@ void test_fits_bits(void) {
 }
 
 int ch2_main(void) {
-    test_leftmost_one();
+    test_rotate_right();
     return 0;
 }
