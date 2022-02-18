@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <assert.h>
+#include "../utils/utils.h"
 
 
 // 2.27
@@ -225,13 +226,15 @@ void test_leftmost_one(void) {
 // 2.68
 // TODO: incorrect when n is 32
 int lower_bits(int x, int n) {
-    return ~(-1 << n) | x;
+    return (~(-1 << n)) | x;
 }
 
 void test_lower_bits(void) {
     int x = 0x6789abcd;
-    for(int i = 0; i < 32; i++) {
-        printf("%d -> %#.8x\n", i, lower_bits(x, i));
+    for(int i = 0; i <= 32; i++) {
+        char *bin_str = to_binary((unsigned)lower_bits(x, i));
+        printf("%2d -> %s\n", i, bin_str);
+        free(bin_str);
     }
 }
 
@@ -267,7 +270,12 @@ void test_fits_bits(void) {
     printf("All test passed\n");
 }
 
+// 2.71
+int xbyte(unsigned word, int n) {
+    return 1;
+}
+
 int ch2_main(void) {
-    test_rotate_right();
+    test_lower_bits();
     return 0;
 }
