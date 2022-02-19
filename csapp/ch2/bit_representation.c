@@ -223,6 +223,17 @@ void test_leftmost_one(void) {
     printf("leftmost_one: all test cases passed\n");
 }
 
+// 2.67
+// should works on any machine for which `int` is at least 16 bits
+int int_size_is_32(void) {
+    return (1U << 15) << 1 == ((unsigned)INT_MIN >> 15);
+}
+
+void test_int_size_is_32(void) {
+    assert(int_size_is_32() == 1);
+    printf("int_size_is_32: test passed.\n");
+}
+
 // 2.68
 // TODO: incorrect when n is 32
 int lower_bits(int x, int n) {
@@ -275,7 +286,72 @@ int xbyte(unsigned word, int n) {
     return 1;
 }
 
+// 2.76
+void test_2_76(void) {
+    for(int i = 0; i < 100; i+= 10) {
+        assert(((i << 2) + i) == i * 5);
+        assert(((i << 3) + i) == i * 9);
+        assert((i << 5) - (i << 1) == i * 30);
+        assert((i << 3) - (i << 6) == i * -56);
+    }
+    printf("2.76: all test passed\n");
+}
+
+
+// 2.77
+// k ranges: [0, w - 1)
+int divide_power2(int x, int k) {
+    int w = sizeof(x) * CHAR_BIT;
+    int mask = x >> (w - 1);
+    int bias = ~(-1 << k) & mask;
+    return (x + bias) >> k;
+}
+
+void test_divide_power2(void) {
+    int x = -12345;
+    for(int k = 0; k < 14; k++) {
+        assert(divide_power2(x, k) == x / (1<<k));
+    }
+    printf("divide_power2: all test passed\n");
+}
+
+// 2.78
+int mul5div8(int x) {
+    x = (x << 2) + x; // x*5
+    return divide_power2(x, 3);
+}\
+
+void test_mul5div8(void) {
+    int n = INT_MAX / 4;
+    assert(mul5div8(n) == (n * 5) / 8); // test overflow
+    assert(mul5div8(110) == (110 * 5) / 8);
+    assert(mul5div8(-1) == (-1 * 5) / 8);
+    printf("mul5div8: test cases passed\n");
+}
+
+
+// 2.80
+void exer_2_80(int m, int n) {
+//    int a = -1 << n;
+//    int b = ~(-1 << n) << m;
+    char *bin_str_a = to_binary(-1 << n);
+    char *bin_str_b = to_binary(~(-1 << n) << m);
+    printf("m = %d, n = %d\n[%s, %s]\n", m, n, bin_str_a, bin_str_b);
+    free(bin_str_a);
+    free(bin_str_b);
+}
+
+void test_2_80(void) {
+    for(int m = 0; m < 5; m++) {
+        for(int n = 0; n < 10; n++) {
+            exer_2_80(m, n);
+        }
+    }
+    
+}
+
+
 int ch2_main(void) {
-    test_lower_bits();
+    test_mul5div8();
     return 0;
 }
