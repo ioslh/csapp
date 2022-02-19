@@ -319,7 +319,7 @@ void test_divide_power2(void) {
 int mul5div8(int x) {
     x = (x << 2) + x; // x*5
     return divide_power2(x, 3);
-}\
+}
 
 void test_mul5div8(void) {
     int n = INT_MAX / 4;
