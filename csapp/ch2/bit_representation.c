@@ -300,13 +300,14 @@ void test_xbyte(void) {
 // 2.73
 // Too ugly, find way to optimize
 /**
- k = !(sx ^ sy) && (sy ^ sz)
- |-------------------|---|---------|--------|-----------------|-------------------|
- | Var               | k | m = k-1 | t1=m&z | t2=t1^(sx & ~m) | t3=t2^(Tmax & ~m) |
- | Normal            | 0 | -1      | z      | z               | z                 |
- | Positive Overflow | 1 | 0       | 0      | 0               | Tmax              |
- | Negative Overflow | 1 | 0       | 0      | -1              | Tmin (==-1^Tmax)  |
- |-------------------|---|---------|--------|-----------------|-------------------|
+ k: k = !(sx ^ sy) && (sy ^ sz)
+ sx: if positive overflow sx == 0 else if negative overflow sx == -1 (bit: 0b1111...111)
+ |-------------------|--------|---|---------|--------|-----------------|-------------------|
+ | Var               | Target | k | m = k-1 | t1=m&z | t2=t1^(sx & ~m) | t3=t2^(Tmax & ~m) |
+ | Normal            | z      | 0 | -1      | z      | z               | z                 |
+ | Positive Overflow | Tmax   | 1 | 0       | 0      | 0               | Tmax              |
+ | Negative Overflow | Tmin   | 1 | 0       | 0      | -1              | Tmin (==-1^Tmax)  |
+ |-------------------|--------|---|---------|--------|-----------------|-------------------|
  */
 int saturating_add(int x, int y) {
     int z = x + y;
