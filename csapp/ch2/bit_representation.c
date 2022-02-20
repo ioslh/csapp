@@ -283,7 +283,60 @@ void test_fits_bits(void) {
 
 // 2.71
 int xbyte(unsigned word, int n) {
-    return 1;
+    int leftshift = (sizeof(word) - n - 1) * CHAR_BIT;
+    int rightshift = (sizeof(word) - 1) * CHAR_BIT;
+    // not sure if type conversion is allowed here
+    return (int)(word <<leftshift) >> rightshift;
+}
+
+void test_xbyte(void) {
+    unsigned word = 0xfe339876;
+    printf("%#.8x\n", word);
+    for(int i = 0; i <= 3; i++) {
+        printf("extract No.%d byte: %#.8x\n", i, xbyte(word, i));
+    }
+}
+
+// 2.73
+// Too ugly, find way to optimize
+/**
+ k = !(sx ^ sy) && (sy ^ sz)
+ |-------------------|---|---------|--------|-----------------|-------------------|
+ | Var               | k | m = k-1 | t1=m&z | t2=t1^(sx & ~m) | t3=t2^(Tmax & ~m) |
+ | Normal            | 0 | -1      | z      | z               | z                 |
+ | Positive Overflow | 1 | 0       | 0      | 0               | Tmax              |
+ | Negative Overflow | 1 | 0       | 0      | -1              | Tmin (==-1^Tmax)  |
+ |-------------------|---|---------|--------|-----------------|-------------------|
+ */
+int saturating_add(int x, int y) {
+    int z = x + y;
+    int sx = x >> 31;
+    int sy = y >> 31;
+    int sz = z >> 31;
+    int k = !(sx ^ sy) && (sy ^ sz); // indicate if overflow
+    int m = k - 1;
+    return (m & z) ^ (sx & ~m) ^ (INT_MAX & ~m);
+}
+
+void test_saturating_add(void) {
+    // test positive overflow
+    int test_pos_over = INT_MAX / 2 + 1;
+    assert(saturating_add(test_pos_over, test_pos_over + 1) == INT_MAX);
+    assert(test_pos_over + test_pos_over + 1 != INT_MAX);
+    // test negative overflow
+    int test_neg_over = INT_MIN / 2 - 1;
+    assert(saturating_add(test_neg_over, test_neg_over - 1) == INT_MIN);
+    assert(test_neg_over + test_neg_over - 1 != INT_MIN);
+    // test normal case
+    assert(saturating_add(123, 234) == 357);
+    assert(saturating_add(-123, -234) == -357);
+    assert(saturating_add(123, -234) == -111);
+    
+    // some online test cases https://dreamanddead.github.io/CSAPP-3e-Solutions/chapter2/2.73/
+    assert(INT_MAX == saturating_add(INT_MAX, 0x1234));
+    assert(INT_MIN == saturating_add(INT_MIN, -0x1234));
+    assert(0x11 + 0x22 == saturating_add(0x11, 0x22));
+    printf("saturating_add: all test cases passed\n");
 }
 
 // 2.76
@@ -352,6 +405,6 @@ void test_2_80(void) {
 
 
 int ch2_main(void) {
-    test_mul5div8();
+    test_saturating_add();
     return 0;
 }
