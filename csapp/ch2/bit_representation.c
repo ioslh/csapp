@@ -483,6 +483,36 @@ void test_float_ge(void) {
 
 // 2.91
 typedef unsigned float_bits;
+// Shared testing function
+void float_bits_tester(char *fnname, float_bits fn(float_bits), float native_fn(float)) {
+    printf("%s testing start: \n", fnname);
+    float cases[] = {
+        NAN,
+        1.0f,
+        1.5f,
+        -1.5f,
+        0.0f,
+        INFINITY,
+        -INFINITY,
+        MAXFLOAT,
+//        (float)0x7f7fffff,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        float v = cases[i];
+        float nf = native_fn(v);
+        float tf = u2f(fn(f2u(v)));
+        printf("  %f -> %f, %f\n", v, nf, tf);
+        if (nf == nf) {
+            // both non-nan
+            assert(nf == tf);
+        } else {
+            // both nan
+            assert(tf != tf);
+        }
+    }
+    printf("%s: all test cases passed\n", fnname);
+}
 
 float_bits float_absval(float_bits f) {
     unsigned exp = f << 1 >> 24;
@@ -502,21 +532,7 @@ float native_float_absval(float f) {
 }
 
 void test_float_absval(void) {
-    float cases[] = {
-        NAN,
-        1.0f,
-        1.5f,
-        -1.5f,
-        0.0f,
-        INFINITY,
-        -INFINITY,
-    };
-    int length = sizeof(cases) / sizeof(cases[0]);
-    for(int i = 0; i < length; i++) {
-        float v = cases[i];
-        assert(float_absval(f2u(v)) == f2u(native_float_absval(v)));
-    }
-    printf("float_absval: all test cases passed\n");
+    float_bits_tester("float_absval", float_absval, native_float_absval);
 }
 
 // 2.92
@@ -535,21 +551,7 @@ float native_float_negate(float x) {
 }
 
 void test_float_negate(void) {
-    float cases[] = {
-        NAN,
-        1.0f,
-        1.5f,
-        -1.5f,
-        0.0f,
-        INFINITY,
-        -INFINITY,
-    };
-    int length = sizeof(cases) / sizeof(cases[0]);
-    for(int i = 0; i < length; i++) {
-        float v = cases[i];
-        assert(float_negate(f2u(v)) == f2u(native_float_negate(v)));
-    }
-    printf("float_negate: all test cases passed\n");
+    float_bits_tester("float_negate", float_negate, native_float_negate);
 }
 
 // 2.93
@@ -575,34 +577,43 @@ float native_float_half(float x) {
 }
 
 void test_float_half(void) {
-    float cases[] = {
-        NAN,
-        1.0f,
-        1.5f,
-        -1.5f,
-        0.0f,
-        INFINITY,
-        -INFINITY,
-    };
-    int length = sizeof(cases) / sizeof(cases[0]);
-    for(int i = 0; i < length; i++) {
-        float v = cases[i];
-        float nf = native_float_half(v);
-        float tf = u2f(float_half(f2u(v)));
-        printf("%f -> %f, %f\n", v, nf, tf);
-        if (nf == nf) {
-            // both non-nan
-            assert(nf == tf);
-        } else {
-            // both nan
-            assert(tf != tf);
-        }
-    }
-    printf("float_half: all test cases passed\n");
+    float_bits_tester("float_half", float_half, native_float_half);
 }
 
+// 2.94
+float_bits float_twice(float_bits f) {
+    unsigned exp = f << 1 >> 24;
+    unsigned frac = f & 0x7fffff;
+    if (exp == 0xff) {
+        return f;
+    }
+    // max exp is 254
+    if (exp == 254) {
+        exp = 255;
+        frac = 0;
+    } else if (exp == 0) {
+        if (frac & 0x400000) {
+            exp += 1;
+        }
+        frac = (frac & 0x3fffff) << 1;
+    } else {
+        exp += 1;
+    }
+    return (f >> 31 << 31) | (exp << 23) | frac;
+}
+
+float native_float_twice(float f) {
+    return f == f ? 2.0f * f : f;
+}
+
+void test_float_twice(void) {
+    float_bits_tester("float_twice", float_twice, native_float_twice);
+}
 
 int ch2_main(void) {
+    test_float_absval();
+    test_float_negate();
     test_float_half();
+    test_float_twice();
     return 0;
 }
