@@ -443,7 +443,7 @@ unsigned f2u(float x) {
  * 2. exactly same value(=)
  * 3. diff sign: then must x >=0 and y < 0
  * 4. same sign: abs(x) > abs(y) and both > 0, or abs(x) < abs(y), and both < 0
- *    we compare abs(x) and abs(y) by checking the overflow bit(first bit of msb, vz >> 31)
+ *    we compare abs(x) and abs(y) by checking the overflow bit of the subtract result(first bit of msb, vz >> 31)
  */
 int float_ge(float x, float y) {
     unsigned ux = f2u(x);
