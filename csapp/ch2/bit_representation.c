@@ -7,6 +7,7 @@
 #include "../utils/utils.h"
 
 
+
 // 2.27
 bool uadd_ok(unsigned int x, unsigned int y) {
     unsigned int sum = x + y;
@@ -433,10 +434,6 @@ void test_2_80(void) {
 }
 
 // 2.83
-unsigned f2u(float x) {
-    return *(unsigned *)&x;
-}
-
 /**
  * There are four cases when x >= y
  * 1. both zero(=)
@@ -484,7 +481,128 @@ void test_float_ge(void) {
     }
 }
 
+// 2.91
+typedef unsigned float_bits;
+
+float_bits float_absval(float_bits f) {
+    unsigned exp = f << 1 >> 24;
+    unsigned frac = f << 9 >> 9;
+    if (exp == 0xff && frac > 0) {
+        return f;
+    }
+    return (exp << 23 ) | frac;
+}
+
+float native_float_absval(float f) {
+    if (f == f) {
+        return f >= 0.0f ? f : -f;
+    }
+    // NaN
+    return f;
+}
+
+void test_float_absval(void) {
+    float cases[] = {
+        NAN,
+        1.0f,
+        1.5f,
+        -1.5f,
+        0.0f,
+        INFINITY,
+        -INFINITY,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        float v = cases[i];
+        assert(float_absval(f2u(v)) == f2u(native_float_absval(v)));
+    }
+    printf("float_absval: all test cases passed\n");
+}
+
+// 2.92
+float_bits float_negate(float_bits f) {
+    unsigned exp = f << 1 >> 24;
+    unsigned frac = f & 0x7fffff;
+    if (exp == 0xff && frac > 0) {
+        // NAN
+        return f;
+    }
+    return (1U << 31) ^ f;
+}
+
+float native_float_negate(float x) {
+    return x == x ? -x : x;
+}
+
+void test_float_negate(void) {
+    float cases[] = {
+        NAN,
+        1.0f,
+        1.5f,
+        -1.5f,
+        0.0f,
+        INFINITY,
+        -INFINITY,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        float v = cases[i];
+        assert(float_negate(f2u(v)) == f2u(native_float_negate(v)));
+    }
+    printf("float_negate: all test cases passed\n");
+}
+
+// 2.93
+float_bits float_half(float_bits f) {
+    unsigned sign = f >> 31;
+    unsigned exp = f << 1 >> 24;
+    unsigned frac = f & 0x7fffff;
+    if (exp == 0xff) {
+        if (frac > 0) {
+            // NAN
+            return f;
+        }
+        // just for explanation: inf and -inf case
+        return f;
+    }
+    if (exp == 0) return 0U;
+    exp = exp - 1;
+    return (sign << 31) | (exp << 23) | frac;
+}
+
+float native_float_half(float x) {
+    return x == x ? 0.5f * x : x;
+}
+
+void test_float_half(void) {
+    float cases[] = {
+        NAN,
+        1.0f,
+        1.5f,
+        -1.5f,
+        0.0f,
+        INFINITY,
+        -INFINITY,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        float v = cases[i];
+        float nf = native_float_half(v);
+        float tf = u2f(float_half(f2u(v)));
+        printf("%f -> %f, %f\n", v, nf, tf);
+        if (nf == nf) {
+            // both non-nan
+            assert(nf == tf);
+        } else {
+            // both nan
+            assert(tf != tf);
+        }
+    }
+    printf("float_half: all test cases passed\n");
+}
+
+
 int ch2_main(void) {
-    test_float_ge();
+    test_float_half();
     return 0;
 }

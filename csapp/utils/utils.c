@@ -18,3 +18,12 @@ char *to_binary(unsigned x) {
     *(bits + w) = '\0';
     return bits;
 }
+
+
+unsigned f2u(float x) {
+    return *(unsigned *)&x;
+}
+
+float u2f(unsigned x) {
+    return *(float *)&x;
+}

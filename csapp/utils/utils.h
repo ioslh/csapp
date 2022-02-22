@@ -13,5 +13,7 @@
 #include <limits.h>
 
 char *to_binary(unsigned);
+unsigned f2u(float x);
+float u2f(unsigned x);
 
 #endif /* utils_h */
