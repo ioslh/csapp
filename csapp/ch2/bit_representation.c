@@ -340,6 +340,34 @@ void test_saturating_add(void) {
     printf("saturating_add: all test cases passed\n");
 }
 
+// 2.74
+// Like tsub_ok but only limited operations are allowed
+int tsub_ovf(int x, int y) {
+    int z = x - y;
+    int sx = x >> 31;
+    int sy = y >> 31;
+    int sz = z >> 31;
+    return ((sx ^ sy) && !(sy ^ sz)) || (y == -y /* Tmin case */ && !sx && y);
+}
+
+void test_tsub_ovf_assert(int x, int y, int expected) {
+    int is_overflow = tsub_ovf(x, y);
+    assert(is_overflow == expected);
+    assert(is_overflow == !tsub_ok(x, y));
+}
+
+void test_tsub_ovf(void) {
+    test_tsub_ovf_assert(INT_MIN + 10, 20, 1);
+    test_tsub_ovf_assert(INT_MAX - 10, -20, 1);
+    test_tsub_ovf_assert(1, INT_MIN, 1);
+    test_tsub_ovf_assert(-1, INT_MIN, 0);
+    test_tsub_ovf_assert(4, -5, 0);
+    test_tsub_ovf_assert(-10, 9, 0);
+    test_tsub_ovf_assert(INT_MAX, 0, 0);
+    test_tsub_ovf_assert(INT_MIN, 0, 0);
+    printf("tsub_ovf: all case passed\n");
+}
+
 // 2.76
 void test_2_76(void) {
     for(int i = 0; i < 100; i+= 10) {
@@ -404,8 +432,59 @@ void test_2_80(void) {
     
 }
 
+// 2.83
+unsigned f2u(float x) {
+    return *(unsigned *)&x;
+}
+
+/**
+ * There are four cases when x >= y
+ * 1. both zero(=)
+ * 2. exactly same value(=)
+ * 3. diff sign: then must x >=0 and y < 0
+ * 4. same sign: abs(x) > abs(y) and both > 0, or abs(x) < abs(y), and both < 0
+ *    we compare abs(x) and abs(y) by checking the overflow bit(first bit of msb, vz >> 31)
+ */
+int float_ge(float x, float y) {
+    unsigned ux = f2u(x);
+    unsigned uy = f2u(y);
+    
+    unsigned sx = ux >> 31;
+    unsigned sy = uy >> 31;
+    unsigned mask = 0x7fffffff;
+    unsigned vx = ux & mask;
+    unsigned vy = uy & mask;
+    unsigned vz = vx - vy;
+    int is_both_zero = !(vx | vy);
+    int is_equal = ux == uy;
+    int is_diff_sign_bigger = !sx && sy;
+    int is_same_sign_bigger = vz >> 31 == sx && sx == sy;
+    // too too too ugly, any better exp?
+    return is_both_zero || is_equal || is_diff_sign_bigger || is_same_sign_bigger;
+}
+
+void test_float_ge(void) {
+    float cases[][2] = {
+        { +0.0f, -0.0f },
+        { 1.5f, 2.5f },
+        { 4.0f, 2.1f },
+        { -10.5f, -9.0f },
+        { -99.0f, -100.0f },
+        { 9.0f,-10.1f },
+        { -100.0f, 101.5f },
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++ ) {
+        float x = cases[i][0];
+        float y = cases[i][1];
+        int va = float_ge(x, y);
+        int vb = x >= y;
+        printf("check if %f >= %f: result: %d / %d\n", x, y, va, vb);
+        assert(va == vb);
+    }
+}
 
 int ch2_main(void) {
-    test_saturating_add();
+    test_float_ge();
     return 0;
 }
