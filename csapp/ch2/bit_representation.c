@@ -611,6 +611,23 @@ void test_float_twice(void) {
 }
 
 // 2.95
+/**
+ *    0...0 1 XX...XX X...X
+ *    ----- - ------- -----
+ *      A        B      C
+ *
+ *   `shift` denote the continue `0` length(A part), after which is the most significant bit `1`
+ *
+ *   1. extract sign bit
+ *   2. get the absolute value
+ *   3. run `while` to get `shift`, thus check how many tail bits need to be rounded, may need to add a
+ *      compensation conditionally(when `shift` < 8).
+ *   4. adding compensation may cause the most significant bit `1` move to previous one, thus `shift--`
+ *   5. after all above actions,
+ *      `exp` will be B part length(ranges 0 to 23) plus C part length(ranges 0 to 8) plus bias(127)
+ *      `frac` is kept B part bits
+ *      C part is ignored
+ */
 float_bits i2f(int x) {
     if (x == 0) return 0U;
     // mask be normalize value
@@ -625,21 +642,20 @@ float_bits i2f(int x) {
         shift++;
         mask >>= 1;
     }
-    // shift: first bit '1' (from msb to lsb order) position
     if (shift < 8) {
         // 8 - shift bits need to be rounded up
         unsigned compensation = 1 << (7 - shift);
         unsigned ignore_value = ~(-1 << (8 -shift)) & value;
         if (ignore_value > compensation) {
-            // round towards above
+            // round up
             value += compensation;
         } else if (ignore_value == compensation) {
-            // round towards even
+            // round to even
             if ((compensation << 1) & value) {
                 value += compensation;
             }
         }
-        // compensation cause `shift` change
+        // compensation caused `shift` change
         if (((1 << (32 - shift - 1)) & value) == 0) {
             shift -= 1;
         }
