@@ -624,11 +624,11 @@ void test_float_twice(void) {
  *      compensation conditionally(when `shift` < 8).
  *   4. adding compensation may cause the most significant bit `1` move to previous one, thus `shift--`
  *   5. after all above actions,
- *      `exp` will be B part length(ranges 0 to 23) plus C part length(ranges 0 to 8) plus bias(127)
+ *      `exp` will be B part length(as more length as possible, ranges 0 to 23) plus C part length(ranges 0 to 8) plus bias(127)
  *      `frac` is kept B part bits
  *      C part is ignored
  */
-float_bits i2f(int x) {
+float_bits flaoat_i2f(int x) {
     if (x == 0) return 0U;
     // mask be normalize value
     unsigned sign = x >> 31; // 1 or 0
@@ -672,7 +672,7 @@ void test_i2f(void) {
         -1,
         100,
         -100,
-        INT_MIN, // it works for INT_MIN, why?
+        INT_MIN,
         INT_MIN + 10,
         INT_MIN / 2,
         INT_MAX - 10,
@@ -683,11 +683,47 @@ void test_i2f(void) {
     for(int i = 0; i < length; i++) {
         int v = cases[i];
         float_bits nv = f2u((float)v);
-        float_bits tv = i2f(v);
+        float_bits tv = flaoat_i2f(v);
         printf("convert %d to float: \n expected: %s\n      got: %s\n", v, to_binary(nv), to_binary(tv));
         assert(nv == tv);
     }
     printf("i2f: all cases passed\n");
+}
+
+// 2.95
+int float_f2i(float_bits f) {
+    unsigned sign = f >> 31;
+    unsigned exp = ((f << 1) >> 24); // before subtract bias
+    // round to zero, don't care frac part
+    if (exp < 127) return 0;
+    if (exp >= 158) return 0x80000000;
+    exp = exp - 127;
+    unsigned result = (1 << exp) + ((f << 9) >> (32 - exp));
+    return (int)((result ^ (-sign)) + sign);
+}
+
+void test_float_f2i(void) {
+    float cases[] = {
+        0.0f,
+        -0.0f,
+        -10.9f,
+        -12345.56f,
+        99.99f,
+        19.0f,
+        // according to textbook, this MAXFLOAT case should return 0x80000000
+        // but is different from c bahavior ((int),dontknow what to do
+        // MAXFLOAT,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        float v = cases[i];
+        float_bits fv = f2u(v);
+        int result = float_f2i(fv);
+        int expect = (int)v;
+        printf("Convert %f to int: \nexpect: %d\nresult: %d\n", v, expect, result);
+        assert(expect == result);
+    }
+    printf("float_f2i: ass cases passed\n");
 }
 
 int ch2_main(void) {
@@ -696,6 +732,6 @@ int ch2_main(void) {
 //    test_float_half();
 //    test_float_twice();
     
-    test_i2f();
+    test_float_f2i();
     return 0;
 }
