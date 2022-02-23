@@ -610,10 +610,76 @@ void test_float_twice(void) {
     float_bits_tester("float_twice", float_twice, native_float_twice);
 }
 
+// 2.95
+float_bits i2f(int x) {
+    if (x == 0) return 0U;
+    // mask be normalize value
+    unsigned sign = x >> 31; // 1 or 0
+    unsigned value = x > 0 ? x : -x; // or (value ^ (-sign)) + sign
+    unsigned mask = 0x80000000;
+    unsigned shift = 0;
+    while(mask) {
+        if (mask & value) {
+            break;
+        }
+        shift++;
+        mask >>= 1;
+    }
+    // shift: first bit '1' (from msb to lsb order) position
+    if (shift < 8) {
+        // 8 - shift bits need to be rounded up
+        unsigned compensation = 1 << (7 - shift);
+        unsigned ignore_value = ~(-1 << (8 -shift)) & value;
+        if (ignore_value > compensation) {
+            // round towards above
+            value += compensation;
+        } else if (ignore_value == compensation) {
+            // round towards even
+            if ((compensation << 1) & value) {
+                value += compensation;
+            }
+        }
+        // compensation cause `shift` change
+        if (((1 << (32 - shift - 1)) & value) == 0) {
+            shift -= 1;
+        }
+    }
+    unsigned exp = 32 - shift - 1 + 127;
+    unsigned frac = value << (shift + 1);
+    return (sign << 31) | (exp << 23) | (frac >> 9);
+}
+
+void test_i2f(void) {
+    int cases[] = {
+        0,
+        1,
+        -1,
+        100,
+        -100,
+        INT_MIN, // it works for INT_MIN, why?
+        INT_MIN + 10,
+        INT_MIN / 2,
+        INT_MAX - 10,
+        INT_MAX / 2,
+        INT_MAX,
+    };
+    int length = sizeof(cases) / sizeof(cases[0]);
+    for(int i = 0; i < length; i++) {
+        int v = cases[i];
+        float_bits nv = f2u((float)v);
+        float_bits tv = i2f(v);
+        printf("convert %d to float: \n expected: %s\n      got: %s\n", v, to_binary(nv), to_binary(tv));
+        assert(nv == tv);
+    }
+    printf("i2f: all cases passed\n");
+}
+
 int ch2_main(void) {
-    test_float_absval();
-    test_float_negate();
-    test_float_half();
-    test_float_twice();
+//    test_float_absval();
+//    test_float_negate();
+//    test_float_half();
+//    test_float_twice();
+    
+    test_i2f();
     return 0;
 }
